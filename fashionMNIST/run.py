@@ -8,9 +8,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# pick up the test_images from the relevant directory
-
-
 def createModel():
     fashion_mnist = tf.keras.datasets.fashion_mnist
     (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
@@ -48,6 +45,7 @@ def createModel():
 
     return probability_model
 
+# nb some weirdness around image dimensionality - needs fixing
 def importData(folder):
     currentDir = os.path.abspath(os.getcwdb())
 
@@ -60,26 +58,28 @@ def importData(folder):
     images = [cv2.imread(file) for file in files]
     images = [cv2.resize(img, (28, 28)) for img in images]
 
-    img = images[0]
+    imagesToReturn = []
 
-    gray = cv2. cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gray = np.expand_dims(gray, 2)/255
+    for img in images:
 
-    return np.expand_dims(gray, 0)
+        gray = cv2. cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = np.expand_dims(gray, 2)/255
+        imgToAppend = np.expand_dims(gray, 0)
+        imagesToReturn.append(imgToAppend)
+
+    return imagesToReturn
 
 def makePredictions(model, inputFiles):
 
     probability_model = model
     
     predictions = probability_model.predict(inputFiles)
-    print(predictions)
 
 def main():
     dataForPredictions = importData('predictions')
-    #print(f"Shape of predictions data: {dataForPredictions.shape}")
 
     model = createModel()
-    makePredictions(model, dataForPredictions)
+    makePredictions(model, dataForPredictions[0])
 
 if __name__ == "__main__":
     main()
