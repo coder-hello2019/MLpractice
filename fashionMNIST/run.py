@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 def createModel():
     fashion_mnist = tf.keras.datasets.fashion_mnist
     (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
@@ -35,11 +36,13 @@ def createModel():
                 loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                 metrics=['accuracy'])
 
-    model.fit(train_images, train_labels, epochs = 10)
+    model.fit(train_images, train_labels, epochs = 1)
 
     trainModelMetrics = model.evaluate(train_images, train_labels, verbose = 1)
+    print(f"The training loss is {trainModelMetrics[0]} and the training acc is {trainModelMetrics[1]}")
 
     testModelMetrics = model.evaluate(test_images, test_labels, verbose = 1)
+    print(f"The validation loss is {testModelMetrics[0]} and the validation acc is {testModelMetrics[1]}")
 
     probability_model = tf.keras.Sequential([model, tf.keras.layers.Softmax()])
 
@@ -56,30 +59,38 @@ def importData(folder):
     files = [os.path.join(destinationDir, fileName) for fileName in os.listdir(destinationDir)]
 
     images = [cv2.imread(file) for file in files]
-    images = [cv2.resize(img, (28, 28)) for img in images]
 
-    imagesToReturn = []
+    # turn images to grayscale and resize
+    images = [cv2.resize(img, (28,28)) for img in images]
+    images = tf.image.rgb_to_grayscale(images)
+    images = [np.expand_dims(img, 0) for img in images]
 
-    for img in images:
-
-        gray = cv2. cvtColor(img, cv2.COLOR_BGR2GRAY)
-        gray = np.expand_dims(gray, 2)/255
-        imgToAppend = np.expand_dims(gray, 0)
-        imagesToReturn.append(imgToAppend)
-
-    return imagesToReturn
-
+    return images
+    
 def makePredictions(model, inputFiles):
 
-    probability_model = model
-    
-    predictions = probability_model.predict(inputFiles)
+    class_names = {0: 'T-shirt/top', 1: 'Trouser', 2: 'Pullover', 3: 'Dress', 4: 'Coat',
+                5: 'Sandal', 6: 'Shirt', 7: 'Sneaker', 8: 'Bag', 9: 'Ankle boot'}
 
+    probability_model = model
+
+    counter = 0
+    # iterate over imgs passed to function
+    for file in inputFiles:
+        predictions = probability_model.predict(file).tolist()[0]
+        
+        prediction = class_names[predictions.index(max(predictions))]
+
+        print(f"We think that file # {counter} is a {prediction}")
+        counter += 1
+
+    
 def main():
+    
     dataForPredictions = importData('predictions')
 
     model = createModel()
-    makePredictions(model, dataForPredictions[0])
+    makePredictions(model, dataForPredictions)
 
 if __name__ == "__main__":
     main()
